@@ -1,0 +1,1044 @@
+{{ 'section-header.css' | asset_url | stylesheet_tag }}
+
+<div class="skeleton-header{% if section.settings.header_sticky %} skeleton-header--sticky{% endif %}">
+  <div class="skeleton-topbar">
+    <div class="container skeleton-topbar__inner">
+      <div class="skeleton-topbar__welcome">{{ section.settings.header_welcome }}</div>
+      {%- if section.settings.top_enable and section.settings.nav_linklist != blank -%}
+        <ul class="skeleton-topbar__links list-menu--inline no-bullet">
+          {%- for link in linklists[section.settings.nav_linklist].links -%}
+            <li><a href="{{ link.url }}">{{ link.title | escape }}</a></li>
+          {%- endfor -%}
+        </ul>
+      {%- endif -%}
+    </div>
+  </div>
+
+  <div class="skeleton-mainbar">
+    <div class="container skeleton-mainbar__inner">
+      <a href="{{ routes.root_url }}" class="skeleton-logo" aria-label="{{ shop.name }}">
+        {%- if section.settings.logo != blank or section.settings.logo_mobile != blank -%}
+          <picture>
+            {%- if section.settings.logo_mobile != blank -%}
+              <source media="(max-width: 767px)" srcset="{{ section.settings.logo_mobile | image_url: width: section.settings.logo_mobile_width | default: 150 }}">
+            {%- endif -%}
+            {%- if section.settings.logo != blank -%}
+              <img src="{{ section.settings.logo | image_url: width: section.settings.logo_width | default: 200 }}" alt="{{ shop.name }}" width="{{ section.settings.logo_width | default: 200 }}" loading="lazy">
+            {%- else -%}
+              <img src="{{ section.settings.logo_mobile | image_url: width: section.settings.logo_mobile_width | default: 150 }}" alt="{{ shop.name }}" width="{{ section.settings.logo_mobile_width | default: 150 }}" loading="lazy">
+            {%- endif -%}
+          </picture>
+        {%- else -%}
+          <span>{{ shop.name }}</span>
+        {%- endif -%}
+      </a>
+
+      <search-form class="skeleton-search">
+        {%- liquid
+          assign searchUrl = search.terms | split:'product_type:'
+          assign searchTerms = searchUrl[0] | strip
+          assign searchType = searchUrl[1] | strip
+        -%}
+        <form action="{{ routes.search_url }}" method="get" role="search" class="skeleton-search__form">
+          <input type="hidden" name="type" value="product">
+          <input type="hidden" name="options[unavailable_products]" value="hide">
+          <input type="hidden" name="options[prefix]" value="last">
+          <input type="text" name="q" class="skeleton-search__input" placeholder="{{ 'general.search.placeholder' | t }}" value="{{ searchTerms }}">
+          {%- if section.settings.search_type and shop.types.size > 0 -%}
+            <div class="skeleton-search__select-wrap">
+              <select name="product_type" class="skeleton-search__select">
+                <option value="*">{{ 'general.search.all_types' | t }}</option>
+                {%- for product_type in shop.types -%}
+                  {%- if product_type == blank %}{% continue %}{% endif -%}
+                  <option value="{{ product_type }}" {% if searchType == product_type %}selected="selected"{% endif %}>{{ product_type }}</option>
+                {%- endfor -%}
+              </select>
+            </div>
+          {%- endif -%}
+          <button class="skeleton-search__submit" type="submit" aria-label="{{ 'general.search.search' | t }}">
+            <span class="cs-icon icon-search"></span>
+          </button>
+        </form>
+      </search-form>
+
+      <div class="skeleton-actions">
+        {%- if section.settings.contact_enable and section.settings.contact_phone != blank -%}
+          <a class="skeleton-actions__item" href="tel:{{ section.settings.contact_phone | replace: ' ', '' }}">{{ section.settings.contact_phone }}</a>
+        {%- endif -%}
+        {%- if shop.customer_accounts_enabled -%}
+          <a class="skeleton-actions__item" href="{%- if customer -%}{{ routes.account_url }}{%- else -%}{{ routes.account_login_url }}{%- endif -%}">
+            {%- if customer -%}{{ 'customer.account_fallback' | t }}{%- else -%}{{ 'customer.log_in' | t }}{%- endif -%}
+          </a>
+        {%- endif -%}
+        <a class="skeleton-actions__item skeleton-actions__cart" href="{{ routes.cart_url }}">
+          <span class="cs-icon icon-cs-cart"></span>
+          <span>{{ cart.item_count }}</span>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <div class="skeleton-nav">
+    <div class="container skeleton-nav__inner">
+      {%- if section.settings.header_categorie and section.settings.categorie_link_list != blank -%}
+        <details class="skeleton-categories">
+          <summary>{{ section.settings.categorie_title | default: 'Kategoriler' }}</summary>
+          <ul>
+            {%- for link in linklists[section.settings.categorie_link_list].links -%}
+              <li><a href="{{ link.url }}">{{ link.title | escape }}</a></li>
+            {%- endfor -%}
+          </ul>
+        </details>
+      {%- endif -%}
+
+      {%- if section.settings.link_list != blank -%}
+        <ul class="skeleton-nav__menu list-menu--inline no-bullet">
+          {%- for link in linklists[section.settings.link_list].links -%}
+            <li><a href="{{ link.url }}" {% if link.current %}aria-current="page"{% endif %}>{{ link.title | escape }}</a></li>
+          {%- endfor -%}
+        </ul>
+      {%- endif -%}
+    </div>
+  </div>
+</div>
+
+<script type="application/ld+json">
+  {
+    "@context": "http://schema.org",
+    "@type": "Organization",
+    "name": {{ shop.name | json }},
+    "url": {{ shop.url | append: page.url | json }}
+  }
+</script>
+
+{%- if request.page_type == 'index' -%}
+  {% assign potential_action_target = shop.url | append: routes.search_url | append: "?q={search_term_string}" %}
+  <script type="application/ld+json">
+    {
+      "@context": "http://schema.org",
+      "@type": "WebSite",
+      "name": {{ shop.name | json }},
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": {{ potential_action_target | json }},
+        "query-input": "required name=search_term_string"
+      },
+      "url": {{ shop.url | append: page.url | json }}
+    }
+  </script>
+{%- endif -%}
+{% schema %}
+{
+  "name": "Header",
+  "settings": [
+    {
+      "type": "header",
+      "content": "Logo Shop"
+    },
+    {
+      "type": "image_picker",
+      "id": "logo",
+      "label": "Logo image"
+    },
+	{
+      "type": "range",
+      "id": "logo_width",
+      "min": 50,
+      "max": 250,
+      "step": 10,
+      "default": 200,
+      "unit": "px",
+      "label": "Custom logo width"
+    },
+    {
+      "type": "image_picker",
+      "id": "logo_mobile",
+      "label": "Mobile logo image"
+    },
+	{
+      "type": "range",
+      "id": "logo_mobile_width",
+      "min": 50,
+      "max": 250,
+      "step": 10,
+      "default": 150,
+      "unit": "px",
+      "label": "Custom logo mobile width"
+    },
+    {
+      "type": "header",
+      "content": "Welcome setting"
+    },
+    {
+      "type": "textarea",
+      "id": "header_welcome",
+      "label": "Welcome"
+    },
+	{
+      "type": "header",
+      "content": "Top Header"
+    },
+	{
+      "type": "checkbox",
+      "id": "top_enable",
+      "label": "Set active this block"
+    },
+	{
+      "type": "link_list",
+      "id": "nav_linklist",
+      "label": "Menu Link",
+	  "info": "Displays only top-level menu items."
+    },
+    {
+      "type": "header",
+      "content": "Contact Us"
+    },
+    {
+      "type": "checkbox",
+      "id": "contact_enable",
+      "label": "Set active this block"
+    },
+    {
+      "type": "text",
+      "id": "contact_title",
+      "label": "Heading"
+    },
+    {
+      "type": "text",
+      "id": "contact_phone",
+      "label": "Phone"
+    },
+	{
+      "type": "header",
+      "content": "Country/region Selector",
+      "info": "To add a country/region, go to your [payment settings.](/admin/settings/payments)"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_currency_selector",
+      "label": "Show country/region selector",
+      "default": true
+    },
+	{
+      "type": "header",
+      "content": "Search Setting"
+    },
+    {
+      "type": "checkbox",
+      "id": "search_type",
+      "label": "Show product types",
+	  "info": "Filter search results with product type",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "search_auto",
+      "label": "Active search autocomplete",
+      "default": true
+    },
+    {
+      "type": "header",
+      "content": "Categories Setting"
+    },
+	{
+      "type": "checkbox",
+      "id": "header_categorie",
+      "label": "Enable Categories header",
+      "default": true
+    },
+	{
+      "type": "text",
+      "id": "categorie_title",
+      "label": "Heading",
+	  "info": "Set icon in 'Add Content' with type 'Icon Category'"
+    },
+    {
+      "type": "url",
+      "id": "categorie_link",
+      "label": "Link title"
+    },
+    {
+      "type": "link_list",
+      "id": "categorie_link_list",
+      "label": "Categories link"
+    },
+    {
+      "type": "header",
+      "content": "Menu Setting"
+    },
+    {
+      "type": "link_list",
+      "id": "link_list",
+      "label": "Main Menu"
+    },
+    {
+      "type": "checkbox",
+      "id": "header_sticky",
+      "label": "Enable sticky header",
+      "default": true
+    }
+  ],
+  "blocks": [
+    {
+      "name": "Sub Menu",
+      "type": "sub_menu",
+      "settings": [
+        {
+          "type": "text",
+          "id": "title",
+          "label": "Target",
+          "info": "The name of a menu in the first level of main menu"
+        },
+        {
+          "type": "image_picker",
+          "id": "bkg",
+          "label": "Background"
+        },
+		{
+          "type": "header",
+          "content": "1st Column Setting"
+        },
+		{
+          "type": "checkbox",
+          "id": "col1_enable",
+          "label": "1st Column: Enable",
+          "default": true
+        },
+		{
+          "type": "select",
+          "id": "col1_column",
+          "label": "1st Column: Width",
+          "options": [
+            {
+              "value": "12",
+              "label": "1/1"
+            },
+            {
+              "value": "6",
+              "label": "1/2"
+            },
+            {
+              "value": "4",
+              "label": "1/3"
+            },
+            {
+              "value": "3",
+              "label": "1/4"
+            },
+            {
+              "value": "2-4",
+              "label": "1/5"
+            },
+            {
+              "value": "2",
+              "label": "1/6"
+            }
+          ],
+          "default": "4"
+        },		
+		{
+          "type": "text",
+          "id": "col1_link_title",
+          "label": "1st Column: Menu heading"
+        },
+        {
+          "type": "link_list",
+          "id": "col1_link_list",
+          "label": "1st Column: Menu links"
+        },
+		{
+          "type": "text",
+          "id": "col1_product_title",
+          "label": "1st Column: Product heading"
+        },	
+        {
+          "type": "product",
+          "id": "col1_product",
+          "label": "1st Column: Product"
+        },	
+        {
+          "type": "article",
+          "id": "col1_article",
+          "label": "1st Column: Article"
+        },
+        {
+          "type": "html",
+          "id": "col1_html",
+          "label": "1st Column: HTML Block"
+        },
+		{
+          "type": "header",
+          "content": "2st Column Setting"
+        },
+		{
+          "type": "checkbox",
+          "id": "col2_enable",
+          "label": "2nd Column: Enable",
+          "default": true
+        },
+		{
+          "type": "select",
+          "id": "col2_column",
+          "label": "2nd Column: Width",
+          "options": [
+            {
+              "value": "12",
+              "label": "1/1"
+            },
+            {
+              "value": "6",
+              "label": "1/2"
+            },
+            {
+              "value": "4",
+              "label": "1/3"
+            },
+            {
+              "value": "3",
+              "label": "1/4"
+            },
+            {
+              "value": "2-4",
+              "label": "1/5"
+            },
+            {
+              "value": "2",
+              "label": "1/6"
+            }
+          ],
+          "default": "4"
+        },		
+		{
+          "type": "text",
+          "id": "col2_link_title",
+          "label": "2nd Column: Menu heading"
+        },
+        {
+          "type": "link_list",
+          "id": "col2_link_list",
+          "label": "2nd Column: Menu links"
+        },
+		{
+          "type": "text",
+          "id": "col2_product_title",
+          "label": "2nd Column: Product heading"
+        },	
+        {
+          "type": "product",
+          "id": "col2_product",
+          "label": "2nd Column: Product"
+        },	
+        {
+          "type": "article",
+          "id": "col2_article",
+          "label": "2nd Column: Article"
+        },
+        {
+          "type": "html",
+          "id": "col2_html",
+          "label": "2nd Column: HTML Block"
+        },
+		{
+          "type": "header",
+          "content": "3rd Column Setting"
+        },
+		{
+          "type": "checkbox",
+          "id": "col3_enable",
+          "label": "3rd Column: Enable",
+          "default": true
+        },
+		{
+          "type": "select",
+          "id": "col3_column",
+          "label": "3rd Column: Width",
+          "options": [
+            {
+              "value": "12",
+              "label": "1/1"
+            },
+            {
+              "value": "6",
+              "label": "1/2"
+            },
+            {
+              "value": "4",
+              "label": "1/3"
+            },
+            {
+              "value": "3",
+              "label": "1/4"
+            },
+            {
+              "value": "2-4",
+              "label": "1/5"
+            },
+            {
+              "value": "2",
+              "label": "1/6"
+            }
+          ],
+          "default": "4"
+        },		
+		{
+          "type": "text",
+          "id": "col3_link_title",
+          "label": "3rd Column: Menu heading"
+        },
+        {
+          "type": "link_list",
+          "id": "col3_link_list",
+          "label": "3rd Column: Menu links"
+        },
+		{
+          "type": "text",
+          "id": "col3_product_title",
+          "label": "3rd Column: Product heading"
+        },	
+        {
+          "type": "product",
+          "id": "col3_product",
+          "label": "3rd Column: Product"
+        },	
+        {
+          "type": "article",
+          "id": "col3_article",
+          "label": "3rd Column: Article"
+        },
+        {
+          "type": "html",
+          "id": "col3_html",
+          "label": "3rd Column: HTML Block"
+        },
+		{
+          "type": "header",
+          "content": "4th Column Setting"
+        },
+		{
+          "type": "checkbox",
+          "id": "col4_enable",
+          "label": "4th Column: Enable",
+          "default": true
+        },
+		{
+          "type": "select",
+          "id": "col4_column",
+          "label": "4th Column: Width",
+          "options": [
+            {
+              "value": "12",
+              "label": "1/1"
+            },
+            {
+              "value": "6",
+              "label": "1/2"
+            },
+            {
+              "value": "4",
+              "label": "1/3"
+            },
+            {
+              "value": "3",
+              "label": "1/4"
+            },
+            {
+              "value": "2-4",
+              "label": "1/5"
+            },
+            {
+              "value": "2",
+              "label": "1/6"
+            }
+          ],
+          "default": "4"
+        },		
+		{
+          "type": "text",
+          "id": "col4_link_title",
+          "label": "4th Column: Menu heading"
+        },
+        {
+          "type": "link_list",
+          "id": "col4_link_list",
+          "label": "4th Column: Menu links"
+        },
+		{
+          "type": "text",
+          "id": "col4_product_title",
+          "label": "4th Column: Product heading"
+        },	
+        {
+          "type": "product",
+          "id": "col4_product",
+          "label": "4th Column: Product"
+        },	
+        {
+          "type": "article",
+          "id": "col4_article",
+          "label": "4th Column: Article"
+        },
+        {
+          "type": "html",
+          "id": "col4_html",
+          "label": "4th Column: HTML Block"
+        },
+		{
+          "type": "header",
+          "content": "5th Column Setting"
+        },
+		{
+          "type": "checkbox",
+          "id": "col5_enable",
+          "label": "5th Column: Enable",
+          "default": true
+        },
+		{
+          "type": "select",
+          "id": "col5_column",
+          "label": "5th Column: Width",
+          "options": [
+            {
+              "value": "12",
+              "label": "1/1"
+            },
+            {
+              "value": "6",
+              "label": "1/2"
+            },
+            {
+              "value": "4",
+              "label": "1/3"
+            },
+            {
+              "value": "3",
+              "label": "1/4"
+            },
+            {
+              "value": "2-4",
+              "label": "1/5"
+            },
+            {
+              "value": "2",
+              "label": "1/6"
+            }
+          ],
+          "default": "4"
+        },		
+		{
+          "type": "text",
+          "id": "col5_link_title",
+          "label": "5th Column: Menu heading"
+        },
+        {
+          "type": "link_list",
+          "id": "col5_link_list",
+          "label": "5th Column: Menu links"
+        },
+		{
+          "type": "text",
+          "id": "col5_product_title",
+          "label": "5th Column: Product heading"
+        },	
+        {
+          "type": "product",
+          "id": "col5_product",
+          "label": "5th Column: Product"
+        },	
+        {
+          "type": "article",
+          "id": "col5_article",
+          "label": "5th Column: Article"
+        },
+        {
+          "type": "html",
+          "id": "col5_html",
+          "label": "5th Column: HTML Block"
+        },
+		{
+          "type": "header",
+          "content": "6th Column Setting"
+        },
+		{
+          "type": "checkbox",
+          "id": "col6_enable",
+          "label": "6th Column: Enable",
+          "default": true
+        },
+		{
+          "type": "select",
+          "id": "col6_column",
+          "label": "6th Column: Width",
+          "options": [
+            {
+              "value": "12",
+              "label": "1/1"
+            },
+            {
+              "value": "6",
+              "label": "1/2"
+            },
+            {
+              "value": "4",
+              "label": "1/3"
+            },
+            {
+              "value": "3",
+              "label": "1/4"
+            },
+            {
+              "value": "2-4",
+              "label": "1/5"
+            },
+            {
+              "value": "2",
+              "label": "1/6"
+            }
+          ],
+          "default": "4"
+        },		
+		{
+          "type": "text",
+          "id": "col6_link_title",
+          "label": "6th Column: Menu heading"
+        },
+        {
+          "type": "link_list",
+          "id": "col6_link_list",
+          "label": "6th Column: Menu links"
+        },
+		{
+          "type": "text",
+          "id": "col6_product_title",
+          "label": "6th Column: Product heading"
+        },	
+        {
+          "type": "product",
+          "id": "col6_product",
+          "label": "6th Column: Product"
+        },	
+        {
+          "type": "article",
+          "id": "col6_article",
+          "label": "6th Column: Article"
+        },
+        {
+          "type": "html",
+          "id": "col6_html",
+          "label": "6th Column: HTML Block"
+        }
+      ]
+    },
+	{
+      "name": "Icon Category",
+      "type": "icon_categories",
+	  "limit": 1,
+      "settings": [
+        {
+          "type": "image_picker",
+          "id": "categorie_icon_1",
+          "label": "Icon 1: Image"
+        },
+        {
+          "type": "image_picker",
+          "id": "categorie_icon_1_hover",
+          "label": "Icon 1: Image hover"
+        },
+        {
+          "type": "image_picker",
+          "id": "categorie_icon_2",
+          "label": "Icon 2: Image"
+        },
+        {
+          "type": "image_picker",
+          "id": "categorie_icon_2_hover",
+          "label": "Icon 2: Image hover"
+        },
+        {
+          "type": "image_picker",
+          "id": "categorie_icon_3",
+          "label": "Icon 3: Image"
+        },
+        {
+          "type": "image_picker",
+          "id": "categorie_icon_3_hover",
+          "label": "Icon 3: Image hover"
+        },
+        {
+          "type": "image_picker",
+          "id": "categorie_icon_4",
+          "label": "Icon 4: Image"
+        },
+        {
+          "type": "image_picker",
+          "id": "categorie_icon_4_hover",
+          "label": "Icon 4: Image hover"
+        },
+        {
+          "type": "image_picker",
+          "id": "categorie_icon_5",
+          "label": "Icon 5: Image"
+        },
+        {
+          "type": "image_picker",
+          "id": "categorie_icon_5_hover",
+          "label": "Icon 5: Image hover"
+        },
+        {
+          "type": "image_picker",
+          "id": "categorie_icon_6",
+          "label": "Icon 6: Image"
+        },
+        {
+          "type": "image_picker",
+          "id": "categorie_icon_6_hover",
+          "label": "Icon 6: Image hover"
+        },
+        {
+          "type": "image_picker",
+          "id": "categorie_icon_7",
+          "label": "Icon 7: Image"
+        },
+        {
+          "type": "image_picker",
+          "id": "categorie_icon_7_hover",
+          "label": "Icon 7: Image hover"
+        },
+        {
+          "type": "image_picker",
+          "id": "categorie_icon_8",
+          "label": "Icon 8: Image"
+        },
+        {
+          "type": "image_picker",
+          "id": "categorie_icon_8_hover",
+          "label": "Icon 8: Image hover"
+        },
+        {
+          "type": "image_picker",
+          "id": "categorie_icon_9",
+          "label": "Icon 9: Image"
+        },
+        {
+          "type": "image_picker",
+          "id": "categorie_icon_9_hover",
+          "label": "Icon 9: Image hover"
+        },
+        {
+          "type": "image_picker",
+          "id": "categorie_icon_10",
+          "label": "Icon 10: Image"
+        },
+        {
+          "type": "image_picker",
+          "id": "categorie_icon_10_hover",
+          "label": "Icon 10: Image hover"
+        },
+        {
+          "type": "image_picker",
+          "id": "categorie_icon_11",
+          "label": "Icon 11: Image"
+        },
+        {
+          "type": "image_picker",
+          "id": "categorie_icon_11_hover",
+          "label": "Icon 11: Image hover"
+        },
+        {
+          "type": "image_picker",
+          "id": "categorie_icon_12",
+          "label": "Icon 12: Image"
+        },
+        {
+          "type": "image_picker",
+          "id": "categorie_icon_12_hover",
+          "label": "Icon 12: Image hover"
+        },
+        {
+          "type": "image_picker",
+          "id": "categorie_icon_13",
+          "label": "Icon 13: Image"
+        },
+        {
+          "type": "image_picker",
+          "id": "categorie_icon_13_hover",
+          "label": "Icon 13: Image hover"
+        },
+        {
+          "type": "image_picker",
+          "id": "categorie_icon_14",
+          "label": "Icon 14: Image"
+        },
+        {
+          "type": "image_picker",
+          "id": "categorie_icon_14_hover",
+          "label": "Icon 14: Image hover"
+        },
+        {
+          "type": "image_picker",
+          "id": "categorie_icon_15",
+          "label": "Icon 15: Image"
+        },
+        {
+          "type": "image_picker",
+          "id": "categorie_icon_15_hover",
+          "label": "Icon 15: Image hover"
+        },
+        {
+          "type": "image_picker",
+          "id": "categorie_icon_16",
+          "label": "Icon 16: Image"
+        },
+        {
+          "type": "image_picker",
+          "id": "categorie_icon_16_hover",
+          "label": "Icon 16: Image hover"
+        },
+        {
+          "type": "image_picker",
+          "id": "categorie_icon_17",
+          "label": "Icon 17: Image"
+        },
+        {
+          "type": "image_picker",
+          "id": "categorie_icon_17_hover",
+          "label": "Icon 17: Image hover"
+        },
+        {
+          "type": "image_picker",
+          "id": "categorie_icon_18",
+          "label": "Icon 18: Image"
+        },
+        {
+          "type": "image_picker",
+          "id": "categorie_icon_18_hover",
+          "label": "Icon 18: Image hover"
+        },
+        {
+          "type": "image_picker",
+          "id": "categorie_icon_19",
+          "label": "Icon 19: Image"
+        },
+        {
+          "type": "image_picker",
+          "id": "categorie_icon_19_hover",
+          "label": "Icon 19: Image hover"
+        },
+        {
+          "type": "image_picker",
+          "id": "categorie_icon_20",
+          "label": "Icon 20: Image"
+        },
+        {
+          "type": "image_picker",
+          "id": "categorie_icon_20_hover",
+          "label": "Icon 20: Image hover"
+        }
+	  ]
+	},
+    {
+      "name": "Sub Category",
+      "type": "sub_category",
+      "settings": [
+        {
+          "type": "text",
+          "id": "title",
+          "label": "Target",
+          "info": "The name of a menu in the first level of list categories"
+        },
+		{
+          "type": "select",
+          "id": "column",
+          "label": "Number of column",
+          "options": [
+            {
+              "value": "1",
+              "label": "1"
+            },
+            {
+              "value": "2",
+              "label": "2"
+            },
+            {
+              "value": "3",
+              "label": "3"
+            },
+            {
+              "value": "4",
+              "label": "4"
+            },
+            {
+              "value": "5",
+              "label": "5"
+            },
+            {
+              "value": "6",
+              "label": "6"
+            }
+          ],
+          "default": "3"
+        },		
+		{
+          "type": "text",
+          "id": "col1_title",
+          "label": "1st Column: Menu heading"
+        },
+        {
+          "type": "link_list",
+          "id": "col1_linklist",
+          "label": "1st Column: Menu links"
+        },		
+		{
+          "type": "text",
+          "id": "col2_title",
+          "label": "2nd Column: Menu heading"
+        },
+        {
+          "type": "link_list",
+          "id": "col2_linklist",
+          "label": "2nd Column: Menu links"
+        },		
+		{
+          "type": "text",
+          "id": "col3_title",
+          "label": "3rd Column: Menu heading"
+        },
+        {
+          "type": "link_list",
+          "id": "col3_linklist",
+          "label": "3rd Column: Menu links"
+        },		
+		{
+          "type": "text",
+          "id": "col4_title",
+          "label": "4th Column: Menu heading"
+        },
+        {
+          "type": "link_list",
+          "id": "col4_linklist",
+          "label": "4th Column: Menu links"
+        },		
+		{
+          "type": "text",
+          "id": "col5_title",
+          "label": "5th Column: Menu heading"
+        },
+        {
+          "type": "link_list",
+          "id": "col5_linklist",
+          "label": "5th Column: Menu links"
+        },		
+		{
+          "type": "text",
+          "id": "col6_title",
+          "label": "6th Column: Menu heading"
+        },
+        {
+          "type": "link_list",
+          "id": "col6_linklist",
+          "label": "6th Column: Menu links"
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}
